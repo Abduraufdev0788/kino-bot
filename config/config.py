@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-Url = os.getenv("Url")
-Chanel_id = os.getenv("CHANNEL_ID")
+DATABASE_URL = os.getenv("DATABASE_URL")
+CHANNELS = [ch.strip() for ch in os.getenv("CHANNELS", "").split(",") if ch.strip()]
 
 ADMIN_ID = os.getenv("ADMIN_ID")

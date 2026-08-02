@@ -10,3 +10,5 @@ python-telegram-bot==22.7
 requests==2.33.1
 typing_extensions==4.15.0
 urllib3==2.6.3
+SQLAlchemy>=2.0.0
+asyncpg>=0.28.0
