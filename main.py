@@ -28,6 +28,7 @@ def main():
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_movie)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True,
     )
 
     app.add_handler(conv_handler)
@@ -41,6 +42,7 @@ def main():
         NEW_DESC: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_updated_movie)],
     },
     fallbacks=[CommandHandler("cancel", cancel)],
+    allow_reentry=True,
 )
 
     app.add_handler(edit_conv)
@@ -54,6 +56,7 @@ def main():
             DELETE_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_movie_confirm)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True,
     )
     app.add_handler(delete_conv)
     
@@ -67,6 +70,7 @@ def main():
             BROADCAST_MSG: [MessageHandler(filters.ALL & ~filters.COMMAND, broadcast_send)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True,
     )
     app.add_handler(broadcast_conv)
     
