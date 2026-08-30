@@ -14,24 +14,36 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     full_name = update.effective_user.full_name
     is_premium = bool(update.effective_user.is_premium)
 
-    async with async_session() as session:
-        # Check if user exists
-        stmt = select(User).where(User.chat_id == chat_id)
-        result = await session.execute(stmt)
-        user = result.scalar_one_or_none()
-        
-        if not user:
-            new_user = User(chat_id=chat_id, full_name=full_name, is_premium=is_premium)
-            session.add(new_user)
-            await session.commit()
+    is_new_user = False
+    total_users = 0
+
+    try:
+        async with async_session() as session:
+            # Check if user exists
+            stmt = select(User).where(User.chat_id == chat_id)
+            result = await session.execute(stmt)
+            user = result.scalars().first()
             
-            # Adminga xabar yuborish
-            try:
-                total_users = await session.scalar(select(func.count(User.id)))
-                admin_text = f"🆕 Yangi foydalanuvchi qo'shildi!\n\n👤 Ism-familiya: {full_name}\n🆔 ID: {chat_id}\n📊 U botning {total_users}-foydalanuvchisi bo'ldi."
-                await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text)
-            except Exception:
-                pass
+            if not user:
+                try:
+                    new_user = User(chat_id=chat_id, full_name=full_name, is_premium=is_premium)
+                    session.add(new_user)
+                    await session.commit()
+                    is_new_user = True
+                    total_users = await session.scalar(select(func.count(User.id)))
+                except Exception as e:
+                    await session.rollback()
+                    print(f"Yangi userni saqlashda xatolik: {e}")
+    except Exception as e:
+        print(f"Start db xatolik: {e}")
+
+    if is_new_user:
+        # Adminga xabar yuborish (Baza band bo'lmasligi uchun sessiondan tashqarida)
+        try:
+            admin_text = f"🆕 Yangi foydalanuvchi qo'shildi!\n\n👤 Ism-familiya: {full_name}\n🆔 ID: {chat_id}\n📊 U botning {total_users}-foydalanuvchisi bo'ldi."
+            await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text)
+        except Exception:
+            pass
 
 
     if not await check_sub(chat_id, context):
@@ -94,22 +106,33 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    async with async_session() as session:
-        stmt = select(Movie).where(Movie.code == code)
-        result = await session.execute(stmt)
-        movie = result.scalar_one_or_none()
+    movie_found = False
+    try:
+        async with async_session() as session:
+            stmt = select(Movie).where(Movie.code == code)
+            result = await session.execute(stmt)
+            movie = result.scalars().first()
 
-        if not movie:
-            await update.message.reply_text("❌ Bunday kino mavjud emas")
-            return
-            
-        movie.views += 1
-        await session.commit()
+            if movie:
+                movie_found = True
+                movie.views += 1
+                file_id = movie.file_id
+                title = movie.title
+                description = movie.description
+                await session.commit()
+    except Exception as e:
+        print(f"Kino qidirishda DB xatoligi: {e}")
+        await update.message.reply_text("❌ Tizimda xatolik yuz berdi. Iltimos keyinroq urinib ko'ring.")
+        return
 
-        await update.message.reply_video(
-            video=movie.file_id,
-            caption=f"🎬 {movie.title}\n\n{movie.description}"
-        )
+    if not movie_found:
+        await update.message.reply_text("❌ Bunday kino mavjud emas")
+        return
+
+    await update.message.reply_video(
+        video=file_id,
+        caption=f"🎬 {title}\n\n{description}"
+    )
 
 
 async def handle_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
