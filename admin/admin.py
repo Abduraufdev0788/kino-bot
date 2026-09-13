@@ -189,48 +189,72 @@ async def broadcast_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 import os
-import subprocess
-from urllib.parse import urlparse
-from config.config import DATABASE_URL
 
 async def download_backup(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if str(update.effective_user.id) != str(ADMIN_ID):
         await update.message.reply_text("❌ Siz admin emassiz")
         return
 
-    if not DATABASE_URL or 'mysql' not in DATABASE_URL:
-        await update.message.reply_text("❌ MySQL bazasi sozlanmagan. Hozirgi baza MySQL emasdek ko'rinmoqda.")
-        return
-        
-    msg = await update.message.reply_text("⏳ Baza nusxasi (SQL) tayyorlanmoqda...")
-    
-    parsed = urlparse(DATABASE_URL)
-    user = parsed.username
-    password = parsed.password
-    host = parsed.hostname
-    port = parsed.port or 3306
-    db = parsed.path.lstrip('/')
-    
-    file_path = "backup.sql"
-    
-    cmd = ["mysqldump", f"--host={host}", f"--port={port}", f"--user={user}"]
-    if password:
-        cmd.append(f"--password={password}")
-    cmd.append(db)
+    msg = await update.message.reply_text("⏳ Baza nusxasi (MySQL formati) tayyorlanmoqda...")
+    file_path = "kino_bot_mysql_backup.sql"
     
     try:
-        with open(file_path, "w") as f:
-            process = await asyncio.create_subprocess_exec(
-                *cmd, stdout=f, stderr=asyncio.subprocess.PIPE
-            )
-            _, stderr = await process.communicate()
+        async with async_session() as session:
+            users_res = await session.execute(select(User))
+            users = users_res.scalars().all()
             
-        if process.returncode != 0:
-            await msg.edit_text(f"❌ mysqldump xatoligi:\n{stderr.decode()}")
-            return
+            movies_res = await session.execute(select(Movie))
+            movies = movies_res.scalars().all()
             
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write("-- MySQL Backup of Kino-Bot Database\n\n")
+            
+            # Create Users Table
+            f.write("CREATE TABLE IF NOT EXISTS users (\n")
+            f.write("    id INT AUTO_INCREMENT PRIMARY KEY,\n")
+            f.write("    chat_id BIGINT NOT NULL UNIQUE,\n")
+            f.write("    full_name VARCHAR(255),\n")
+            f.write("    is_premium BOOLEAN DEFAULT FALSE,\n")
+            f.write("    joined_at DATETIME\n")
+            f.write(");\n\n")
+            
+            # Create Movies Table
+            f.write("CREATE TABLE IF NOT EXISTS movies (\n")
+            f.write("    id INT AUTO_INCREMENT PRIMARY KEY,\n")
+            f.write("    code VARCHAR(255) NOT NULL UNIQUE,\n")
+            f.write("    title VARCHAR(255) NOT NULL,\n")
+            f.write("    description TEXT,\n")
+            f.write("    file_id VARCHAR(255) NOT NULL,\n")
+            f.write("    views INT DEFAULT 0,\n")
+            f.write("    created_at DATETIME\n")
+            f.write(");\n\n")
+            
+            # Insert Users
+            if users:
+                f.write("INSERT IGNORE INTO users (id, chat_id, full_name, is_premium, joined_at) VALUES\n")
+                user_values = []
+                for u in users:
+                    name = str(u.full_name).replace("'", "''") if u.full_name else ""
+                    prem = 1 if u.is_premium else 0
+                    j_at = f"'{u.joined_at}'" if u.joined_at else "NULL"
+                    user_values.append(f"({u.id}, {u.chat_id}, '{name}', {prem}, {j_at})")
+                f.write(",\n".join(user_values) + ";\n\n")
+                
+            # Insert Movies
+            if movies:
+                f.write("INSERT IGNORE INTO movies (id, code, title, description, file_id, views, created_at) VALUES\n")
+                movie_values = []
+                for m in movies:
+                    code = str(m.code).replace("'", "''") if m.code else ""
+                    title = str(m.title).replace("'", "''") if m.title else ""
+                    desc = str(m.description).replace("'", "''") if m.description else ""
+                    f_id = str(m.file_id).replace("'", "''") if m.file_id else ""
+                    c_at = f"'{m.created_at}'" if m.created_at else "NULL"
+                    movie_values.append(f"({m.id}, '{code}', '{title}', '{desc}', '{f_id}', {m.views}, {c_at})")
+                f.write(",\n".join(movie_values) + ";\n\n")
+
         with open(file_path, "rb") as doc:
-            await update.message.reply_document(document=doc, filename="kino_bot_backup.sql")
+            await update.message.reply_document(document=doc, filename="kino_bot_mysql_backup.sql")
         await msg.delete()
             
     except Exception as e:
