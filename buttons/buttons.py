@@ -1,5 +1,5 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-from config.config import CHANNELS
+from config.config import CHANNELS, YOUTUBE_CHANNEL
 
 def get_subscribe_buttons():
     keyboard = []
@@ -8,6 +8,9 @@ def get_subscribe_buttons():
         # Username orqali URL yaratish (masalan: @kanal -> dasturlash_va_IT_sohalar)
         url = f"https://t.me/{channel.replace('@', '')}"
         keyboard.append([InlineKeyboardButton(f"📢 {i}-kanalga o‘tish", url=url)])
+        
+    if YOUTUBE_CHANNEL:
+        keyboard.append([InlineKeyboardButton("▶️ YouTube kanaliga obuna bo'lish", url=YOUTUBE_CHANNEL)])
         
     keyboard.append([InlineKeyboardButton("✅ Tekshirdim", callback_data="check_sub")])
 
