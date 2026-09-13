@@ -3,7 +3,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 from config.config import TOKEN
 from database.db import init_db
 from users.users import start, check_subscription_callback, handle_message, handle_stats, contact_admin
-from admin.admin import add_movie_start, get_code, get_video, get_title, save_movie, cancel, edit_movie_start, get_edit_code, get_new_title, save_updated_movie, broadcast_start, broadcast_send, delete_movie_start, delete_movie_confirm
+from admin.admin import add_movie_start, get_code, get_video, get_title, save_movie, cancel, edit_movie_start, get_edit_code, get_new_title, save_updated_movie, broadcast_start, broadcast_send, delete_movie_start, delete_movie_confirm, download_backup
 
 from state import VIDEO, CODE, TITLE, DESCRIPTION, EDIT_CODE, NEW_TITLE, NEW_DESC, BROADCAST_MSG, DELETE_CODE
 
@@ -83,6 +83,7 @@ def main():
     from users.users import movie_codes, advertise_contact
     app.add_handler(MessageHandler(filters.Regex("^🎬 Kino kodlari$"), movie_codes))
     app.add_handler(MessageHandler(filters.Regex("^💰 Reklama yuborish$"), advertise_contact))
+    app.add_handler(MessageHandler(filters.Regex("^🗄 Baza nusxasi$"), download_backup))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 

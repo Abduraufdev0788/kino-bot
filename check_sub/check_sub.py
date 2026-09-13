@@ -2,16 +2,17 @@ from telegram.ext import ContextTypes
 from telegram.error import TelegramError
 from config.config import CHANNELS
 
-async def check_sub(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
+async def check_sub(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> list:
     if not CHANNELS:
-        return True
+        return []
         
+    unjoined = []
     for channel in CHANNELS:
         try:
             member = await context.bot.get_chat_member(chat_id=channel, user_id=chat_id)
             if member.status not in ["member", "administrator", "creator"]:
-                return False
+                unjoined.append(channel)
         except TelegramError:
-            return False
+            unjoined.append(channel)
             
-    return True
+    return unjoined

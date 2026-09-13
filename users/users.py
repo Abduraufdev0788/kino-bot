@@ -46,7 +46,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
 
-    if not await check_sub(chat_id, context):
+    unjoined = await check_sub(chat_id, context)
+    if unjoined:
         text = f"""🎬 Assalomu alaykum, {full_name} xush kelibsiz!
 
 Bu bot orqali siz istalgan kinoni maxsus kod orqali topishingiz mumkin 📺
@@ -62,7 +63,7 @@ Bu bot orqali siz istalgan kinoni maxsus kod orqali topishingiz mumkin 📺
 """
         await update.message.reply_text(
             text,
-            reply_markup=get_subscribe_buttons()
+            reply_markup=get_subscribe_buttons(unjoined)
         )
         return
 
@@ -87,11 +88,16 @@ async def check_subscription_callback(update: Update, context: ContextTypes.DEFA
     query = update.callback_query
     chat_id = query.from_user.id
 
-    if await check_sub(chat_id, context):
+    unjoined = await check_sub(chat_id, context)
+    if not unjoined:
         await query.answer()
         await query.message.edit_text("✅ Rahmat! Endi kino kodini yuboring 🎬")
     else:
         await query.answer("❌ Hali hamma kanallarga a’zo bo'lmadingiz!", show_alert=True)
+        try:
+            await query.edit_message_reply_markup(reply_markup=get_subscribe_buttons(unjoined))
+        except Exception:
+            pass
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -99,10 +105,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     code = update.message.text.strip()
 
     # ❌ a’zo emas
-    if not await check_sub(chat_id, context):
+    unjoined = await check_sub(chat_id, context)
+    if unjoined:
         await update.message.reply_text(
             "❌ Avval barcha kanallarga a’zo bo‘ling!",
-            reply_markup=get_subscribe_buttons()
+            reply_markup=get_subscribe_buttons(unjoined)
         )
         return
 

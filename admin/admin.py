@@ -186,3 +186,55 @@ async def broadcast_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     await update.message.reply_text(f"✅ Xabar tarqatish yakunlandi!\n\n📤 Muvaffaqiyatli: {success} ta\n❌ Bloklagan/Xatolik: {fail} ta")
     return ConversationHandler.END
+
+
+import os
+import subprocess
+from urllib.parse import urlparse
+from config.config import DATABASE_URL
+
+async def download_backup(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_user.id) != str(ADMIN_ID):
+        await update.message.reply_text("❌ Siz admin emassiz")
+        return
+
+    if not DATABASE_URL or 'mysql' not in DATABASE_URL:
+        await update.message.reply_text("❌ MySQL bazasi sozlanmagan. Hozirgi baza MySQL emasdek ko'rinmoqda.")
+        return
+        
+    msg = await update.message.reply_text("⏳ Baza nusxasi (SQL) tayyorlanmoqda...")
+    
+    parsed = urlparse(DATABASE_URL)
+    user = parsed.username
+    password = parsed.password
+    host = parsed.hostname
+    port = parsed.port or 3306
+    db = parsed.path.lstrip('/')
+    
+    file_path = "backup.sql"
+    
+    cmd = ["mysqldump", f"--host={host}", f"--port={port}", f"--user={user}"]
+    if password:
+        cmd.append(f"--password={password}")
+    cmd.append(db)
+    
+    try:
+        with open(file_path, "w") as f:
+            process = await asyncio.create_subprocess_exec(
+                *cmd, stdout=f, stderr=asyncio.subprocess.PIPE
+            )
+            _, stderr = await process.communicate()
+            
+        if process.returncode != 0:
+            await msg.edit_text(f"❌ mysqldump xatoligi:\n{stderr.decode()}")
+            return
+            
+        with open(file_path, "rb") as doc:
+            await update.message.reply_document(document=doc, filename="kino_bot_backup.sql")
+        await msg.delete()
+            
+    except Exception as e:
+        await msg.edit_text(f"❌ Xatolik yuz berdi: {e}")
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
