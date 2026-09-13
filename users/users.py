@@ -168,7 +168,7 @@ async def contact_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def movie_codes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎬 Barcha kino kodlarini bizning asosiy kanalimizdan topishingiz mumkin:\n👉 https://t.me/dasturlash_va_IT_sohalar"
+        "🎬 Barcha kino kodlarini bizning asosiy kanalimizdan topishingiz mumkin:\n👉 https://t.me/kodli_kinolar_uzbek"
     )
 
 async def advertise_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -177,7 +177,7 @@ async def advertise_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Kanal yoki botda reklama joylashtirish uchun quyidagi ma'lumotlar orqali bog'lanishingiz mumkin:\n\n"
         "👤 <b>Admin:</b> Abdurauf Nasrullayev\n"
         "📱 <b>Telefon:</b> +998 95 289 87 88\n"
-        "💬 <b>Telegram:</b> @Abdurauf_Nasrullayev\n\n"
+        "💬 <b>Telegram:</b> @Send_store_uz\n\n"
         "💳 <b>Karta raqami:</b>\n"
         "<code>9860 1901 0971 8980</code>\n"
         "👤 <b>Karta egasi:</b> Abdurauf Nasrullayev\n\n"
